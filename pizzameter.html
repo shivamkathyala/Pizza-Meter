@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Half-Circle Pizza Meter</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Anton:wght@100&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Anton", sans-serif;
+      }
+      .pizza-meter-container {
+        position: relative;
+        width: 500px;
+        height: 400px;
+        margin: 50px auto;
+      }
+      .hidden {
+        display: none;
+      }
+      .hidden img {
+        width: 300px;
+        height: 300px;
+      }
+
+      canvas#pizzaMeter {
+        box-shadow: 0px 0px 3px 0px #000;
+        border-radius: 7px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="pizza-meter-container">
+      <canvas id="pizzaMeter" width="600" height="400"></canvas>
+    </div>
+
+    <!-- Images for color sections -->
+    <img
+      id="img1"
+      class="hidden"
+      src="https://static.wixstatic.com/media/dfd38d_daa4ac3244c047a597344ec645eb0bda~mv2.png"
+      alt="pizza"
+    />
+    <img
+      id="img2"
+      class="hidden"
+      src="https://static.wixstatic.com/media/dfd38d_b1a651c184364e1e8856e2186a962bfb~mv2.png"
+      alt="pizza"
+    />
+    <img
+      id="img3"
+      class="hidden"
+      src="https://static.wixstatic.com/media/dfd38d_6f58b34a3f944cb4a34a7ab9f6800a0e~mv2.png"
+      alt="pizza"
+    />
+    <img
+      id="img4"
+      class="hidden"
+      src="https://static.wixstatic.com/media/dfd38d_f7b77ee0e21044f3844e33c92697a404~mv2.png"
+      alt="pizza"
+    />
+    <img
+      id="img5"
+      class="hidden"
+      src="https://static.wixstatic.com/media/dfd38d_003cfb4e087c4ccebacd7787d49fc587~mv2.png"
+      alt="pizza"
+    />
+
+    <script>
+      let currentValue = 0;
+      let targetValue = 0;
+      let angle = Math.PI; // Initial angle of the needle
+      const angleSpeed = 0.02; // Speed of needle movement
+
+      const canvas = document.getElementById("pizzaMeter");
+      const ctx = canvas.getContext("2d");
+
+      const maxRotation = Math.PI; // Half-circle range (180 degrees)
+      const startAngle = Math.PI;
+      const endAngle = 2 * Math.PI;
+      const totalAvailableAngle = endAngle - startAngle; // Total angle for drawing
+
+      const images = [
+        document.getElementById("img1"),
+        document.getElementById("img2"),
+        document.getElementById("img3"),
+        document.getElementById("img4"),
+        document.getElementById("img5"),
+      ];
+
+      const imageScales = [1, 1, 1, 1, 1]; // Initial scale for each image
+
+      function drawPizzaMeter(ctx, value) {
+        ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+        const gapColor = "red"; // Color for the gaps
+        const sectionCount = images.length;
+        const gapCount = sectionCount - 0; // Number of gaps
+        const gap = 0.0; // Gap between sections as a proportion of the section angle
+        const sectionAngle = (totalAvailableAngle / sectionCount) * (1 - gap); // Angle for each section considering gaps
+        const gapAngle = (totalAvailableAngle * gap) / gapCount; // Angle for each gap
+
+        const centerX = ctx.canvas.width / 2;
+        const centerY = ctx.canvas.height / 2 + 90; // Adjusted for vertical centering
+
+        const radius = 255; // Increased radius for larger appearance
+
+        // Draw the gaps
+        for (let i = 0; i < gapCount; i++) {
+          const currentStartAngle =
+            startAngle + (i + 1) * (sectionAngle + gapAngle);
+          const currentEndAngle = currentStartAngle + gapAngle;
+
+          ctx.beginPath();
+          ctx.arc(centerX, centerY, radius, currentStartAngle, currentEndAngle);
+          ctx.lineWidth = 70; // Adjusted line width for better appearance
+          ctx.strokeStyle = gapColor;
+          ctx.stroke();
+        }
+
+        // Draw the sections
+        for (let i = 0; i < sectionCount; i++) {
+          const currentStartAngle = startAngle + i * (sectionAngle + gapAngle);
+          const currentEndAngle = currentStartAngle + sectionAngle;
+
+          const image = images[i];
+          const imageAngle = (currentEndAngle - currentStartAngle) / 2;
+          const imageX =
+            centerX + (radius - 60) * Math.cos(currentStartAngle + imageAngle); // Adjust image position
+          const imageY =
+            centerY + (radius - 60) * Math.sin(currentStartAngle + imageAngle); // Adjust image position
+
+          ctx.save();
+          ctx.translate(imageX, imageY);
+          ctx.rotate(currentStartAngle + imageAngle + Math.PI / 2);
+          const scale = imageScales[i];
+          ctx.scale(scale, scale);
+          ctx.drawImage(image, -70, -80, 140, 140); // Draw the image centered at the point
+          ctx.restore();
+        }
+
+        // NEEDLE
+        const rotationAngle = startAngle + (value / 150) * totalAvailableAngle; // Proportional rotation
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(angle);
+
+        // Define the segments and their colors
+        const needleSegments = [
+          { length: radius * 0.2, color: "#de2a38", rounded: false },
+          { length: radius * 0.2, color: "#de2a38", rounded: false },
+          { length: radius * 0.2, color: "#de2a38", rounded: true },
+        ];
+
+        let currentPosition = 0;
+        needleSegments.forEach((segment) => {
+          ctx.beginPath();
+          ctx.moveTo(currentPosition, 0);
+          ctx.lineTo(currentPosition + segment.length, 0);
+          ctx.lineWidth = 11;
+          ctx.strokeStyle = segment.color;
+          if (segment.rounded) {
+            ctx.lineCap = "round";
+          }
+          ctx.stroke();
+          currentPosition += segment.length;
+        });
+
+        ctx.restore();
+
+        // Draw the center circle
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, 15, 0, 2 * Math.PI);
+        ctx.fillStyle = "#079156";
+        ctx.fill();
+
+        // Draw a black rectangular box with text below the indicator
+        const boxWidth = 540; // Increased width
+        const boxHeight = 55; // Increased height
+        const boxX = (ctx.canvas.width - boxWidth) / 2;
+        const boxY = ctx.canvas.height - 95; // Positioned just below the arc
+
+        // Draw the rectangle
+        ctx.beginPath();
+        ctx.rect(boxX, boxY, boxWidth, boxHeight);
+        ctx.fillStyle = "#000"; // Black background
+        ctx.fill();
+
+        // Draw the text inside the rectangle
+        ctx.fillStyle = "#FFF"; // White text
+        ctx.font = "900 40px Anton"; // Increased font size for better visibility
+        ctx.textAlign = "center"; // Center text horizontally
+        ctx.textBaseline = "middle"; // Center text vertically
+        ctx.fillText(
+          "PIZZOMETR",
+          boxX + boxWidth / 2,
+          boxY + boxHeight / 2 + 4
+        );
+      }
+
+      // meter functionality
+      function animateMeter() {
+        const targetAngle =
+          startAngle + (targetValue / 150) * totalAvailableAngle;
+
+        if (Math.abs(angle - targetAngle) > 0.01) {
+          angle += (targetAngle - angle) * angleSpeed; // Adjust the speed of rotation
+          if (Math.abs(angle - targetAngle) < 0.01) {
+            angle = targetAngle;
+          }
+          drawPizzaMeter(ctx, currentValue);
+          requestAnimationFrame(animateMeter);
+        } else {
+          currentValue = targetValue;
+          drawPizzaMeter(ctx, currentValue);
+        }
+      }
+
+      function updatePizzaMeter(value) {
+        targetValue = Math.min(value, 150); // Constrain value to 150
+
+        // Determine which image section the needle is pointing to
+        const sectionIndex = Math.floor((targetValue / 150) * images.length);
+
+        // Reset scales
+        for (let i = 0; i < imageScales.length; i++) {
+          imageScales[i] = 1;
+        }
+        // Set the scale of the targeted section to be larger
+        imageScales[sectionIndex] = 1.1; // Adjust the scale as needed
+
+        requestAnimationFrame(animateMeter);
+      }
+
+      // Update the pizza meter every 2 seconds with a random value between 0 and 150
+      setInterval(() => {
+        const randomValue = Math.floor(Math.random() * 151);
+        updatePizzaMeter(randomValue);
+      }, 2000);
+    </script>
+  </body>
+</html>
